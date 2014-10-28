@@ -16,7 +16,23 @@ use IO::Select;
 use POSIX ":sys_wait_h";
 
 our @ISA = qw/Exporter/;
-our @EXPORT = qw/prun/;
+our @EXPORT = qw/prun child_return/;
+
+sub kill_myself
+{
+    chomp(my $mesg = shift);
+
+    print STDERR $mesg, "\n";
+
+    kill('KILL', getppid());
+}
+
+sub child_return
+{
+    my $string_ref = shift;
+
+    return sprintf("%10d", length($$string_ref)), $string_ref;
+}
 
 sub prun
 {
@@ -35,7 +51,7 @@ sub prun
     for my $i (1...$process_cnt)
     {
         my ($read_fd, $write_fd) = (undef, undef);
-        pipe($read_fd, $write_fd);
+        pipe($read_fd, $write_fd);  # check return value here
         push(@read_fd_array, $read_fd);
 
         $share_payloads_area = $payloads_ref->[$i-1];
@@ -50,10 +66,10 @@ sub prun
         else
         {
             # child
-            my ($len, $content) = &$do_func($share_payloads_area, $i);
+            my ($len, $content_ref) = &$do_func($share_payloads_area, $i);
             my $l = sprintf("%10d", $len);
             syswrite($write_fd, $l, length($l)); # length($l) == 10
-            syswrite($write_fd, $content, $len);
+            syswrite($write_fd, $$content_ref, $len); # check return value for all syswrite() /sysread()
             exit(0);
         }
     }
@@ -71,7 +87,7 @@ sub prun
             my $content;
             sysread($fd, $content, int($len));
             $s->remove($fd);
-            &$merge_func(\$content, $results_ref);
+            &$merge_func(\$content, $results_ref) if defined($merge_func);
         }
     }
 

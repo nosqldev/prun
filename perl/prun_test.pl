@@ -41,7 +41,7 @@ sub generate_string
 
     map { $content .= $worker_id } (1 ... $payloads_ref->[0]);
 
-    return sprintf("%10d", length($content)), $content;
+    return &child_return(\$content);
 }
 
 sub merge_string
@@ -59,6 +59,7 @@ sub main
 
     assert($result_str eq '11222344');
     print color("bright_green") . "passed\n" . color("reset");
+
 }
 
 &main();
