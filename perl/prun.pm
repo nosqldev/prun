@@ -16,7 +16,7 @@ use IO::Select;
 use POSIX ":sys_wait_h";
 
 our @ISA = qw/Exporter/;
-our @EXPORT = qw/prun child_return/;
+our @EXPORT = qw/prun child_return split_payload_range/;
 
 sub kill_myself
 {
@@ -34,12 +34,39 @@ sub child_return
     return sprintf("%10d", length($$string_ref)), $string_ref;
 }
 
+sub split_payload_range
+{
+    my $process_cnt = shift;
+    my $range_ref = shift;
+
+    $process_cnt = $range_ref->[1] - $range_ref->[0] if ($range_ref->[1] - $range_ref->[0] < $process_cnt);
+
+    my $step = int(($range_ref->[1] - $range_ref->[0]) / $process_cnt);
+
+    my $start = $range_ref->[0];
+    my @payloads_range = ();
+    for my $i (1...$process_cnt)
+    {
+        if ($i == $process_cnt)
+        {
+            push(@payloads_range, [$start, $range_ref->[1]]);
+        }
+        else
+        {
+            push(@payloads_range, [$start, $start+$step-1]);
+        }
+        $start = $start + $step;
+    }
+
+    return \@payloads_range;
+}
+
 sub prun
 {
     my $process_cnt = shift;
     my $do_func = shift;
     my $payloads_ref = shift;
-    my $merge_func = shift;
+    my $merge_func = shift || undef;
     my $results_ref = shift || undef;
 
     my $share_payloads_area;

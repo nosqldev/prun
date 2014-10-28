@@ -57,9 +57,22 @@ sub main
     my $result_str = '';
     &prun(4, \&generate_string, [[2], [3], [1], [2],], \&merge_string, \$result_str);
 
-    assert($result_str eq '11222344');
-    print color("bright_green") . "passed\n" . color("reset");
+    &assert($result_str eq '11222344');
 
+    my $range_ref = &split_payload_range(2, [10, 20]);
+    assert($range_ref->[0][0] == 10);
+    assert($range_ref->[0][1] == 14);
+    assert($range_ref->[1][0] == 15);
+    assert($range_ref->[1][1] == 20);
+
+    $range_ref = &split_payload_range(100, [10, 20]);
+    assert(@$range_ref == 10);
+    assert($range_ref->[0][0] == 10);
+    assert($range_ref->[0][1] == 10);
+    assert($range_ref->[9][0] == 19);
+    assert($range_ref->[9][1] == 20);
+
+    print color("bright_green") . "passed\n" . color("reset");
 }
 
 &main();
